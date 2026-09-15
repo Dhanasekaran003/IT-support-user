@@ -16,6 +16,7 @@ import { TeamPage } from "./pages/TeamPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { useAuth } from "./store/auth";
 
+
 export default function App() {
   const hydrate = useAuth((s) => s.hydrate);
   const user = useAuth((s) => s.user);
