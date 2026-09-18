@@ -28,7 +28,7 @@ export function DashboardPage() {
         subtitle="Live tickets, AMC coverage, and invoices for your organization"
         action={
           <Link to="/book">
-            <Button>Book a service</Button>
+            <Button>Call a technician</Button>
           </Link>
         }
       />

@@ -1,22 +1,46 @@
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Star } from "lucide-react";
 import { getData, send } from "../lib/api";
 import { inr } from "../lib/cn";
+import { findService } from "../lib/marketplace";
 import type { Asset, Category, PortalLookups, PortalSummary, Site, Ticket } from "../lib/types";
-import { Badge, Button, Card, Empty, Field, Input, PageHeader, Select, Textarea } from "../components/ui/primitives";
+import { Badge, Button, Card, Empty, Field, Input, Select, Textarea } from "../components/ui/primitives";
+
+function matchCategory(categories: Category[], serviceName?: string, categoryId?: string) {
+  if (!categories.length) return { categoryId: "", subCategoryId: "" };
+  const hay = `${serviceName || ""} ${categoryId || ""}`.toLowerCase();
+  const keywords = [
+    { keys: ["laptop", "desktop"], cat: "laptop" },
+    { keys: ["wifi", "network", "mesh"], cat: "network" },
+    { keys: ["printer"], cat: "printer" },
+    { keys: ["cctv", "access", "camera"], cat: "cctv" },
+    { keys: ["server", "backup"], cat: "server" },
+    { keys: ["amc"], cat: "amc" },
+  ];
+  const hit = keywords.find((k) => k.keys.some((word) => hay.includes(word)));
+  const matched = categories.find((c) => {
+    const n = c.name.toLowerCase();
+    if (hit) return hit.keys.some((word) => n.includes(word)) || n.includes(hit.cat);
+    return hay && n.includes(hay.split(" ")[0]);
+  });
+  return { categoryId: matched?._id || "", subCategoryId: "" };
+}
 
 export function BookPage() {
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [params] = useSearchParams();
+  const market = findService(params.get("service"));
   const [categoryId, setCategoryId] = useState("");
   const [subCategoryId, setSubCategoryId] = useState("");
   const [form, setForm] = useState({
     siteId: "",
     assetId: "",
-    title: "",
-    description: "",
+    title: market?.name || "",
+    description: market?.blurb || "",
     priority: "medium",
   });
 
@@ -50,13 +74,23 @@ export function BookPage() {
   const priorities = lookups.data?.data.priorities || [];
   const contract = summary.data?.data.contract;
 
+  useEffect(() => {
+    if (!categories.length || categoryId) return;
+    const match = matchCategory(categories, market?.name, market?.categoryId);
+    if (match.categoryId) {
+      setCategoryId(match.categoryId);
+      setForm((f) => ({ ...f, title: f.title || market?.name || "" }));
+    }
+  }, [categories, categoryId, market]);
+
   const priceHint = useMemo(() => {
     const cat = selectedSub || selected;
+    if (market && !cat) return `${inr(market.price)} · starting price`;
     if (!cat) return null;
     if (contract && cat.amcIncluded) return "Covered under your active AMC";
     if (cat.basePrice) return `${inr(cat.basePrice)} ${cat.priceModel || ""}`.trim();
     return cat.priceModel || "Quoted after diagnosis";
-  }, [selected, selectedSub, contract]);
+  }, [selected, selectedSub, contract, market]);
 
   const book = useMutation({
     mutationFn: () =>
@@ -80,10 +114,29 @@ export function BookPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Book a service"
-        subtitle="Services and prices come from the live catalog. Your organization and sites are loaded from the account."
-      />
+      <div className="mb-8">
+        <h1 className="text-[28px] font-bold tracking-tight">Book a service</h1>
+        <p className="mt-1 text-sm text-muted-foreground">A technician will visit the site you select. Prices follow your live catalog and AMC coverage.</p>
+      </div>
+
+      {market && (
+        <div className="mb-8 flex gap-4 overflow-hidden rounded-2xl border border-border">
+          <img src={market.image} alt={market.name} className="hidden h-36 w-48 object-cover sm:block" />
+          <div className="flex flex-1 flex-col justify-center p-4">
+            <div className="text-lg font-semibold">{market.name}</div>
+            <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+              <Star className="h-3.5 w-3.5 fill-current text-foreground" />
+              {market.rating.toFixed(2)}
+            </div>
+            <div className="mt-1 text-sm">
+              <span className="font-semibold">{inr(market.price)}</span>
+              {market.mrp && <span className="ml-2 text-muted-foreground line-through">{inr(market.mrp)}</span>}
+            </div>
+            {market.blurb && <p className="mt-1 text-sm text-muted-foreground">{market.blurb}</p>}
+          </div>
+        </div>
+      )}
+
       {catalog.isLoading && <Empty text="Loading catalog…" />}
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((cat) => (
@@ -95,7 +148,7 @@ export function BookPage() {
               setSubCategoryId("");
               setForm((f) => ({ ...f, title: f.title || `${cat.name} support` }));
             }}
-            className={`rounded-lg border p-4 text-left ${categoryId === cat._id ? "border-primary bg-teal-50" : "border-border bg-card hover:border-primary/40"}`}
+            className={`rounded-xl border p-4 text-left ${categoryId === cat._id ? "border-black bg-muted" : "border-border bg-card hover:border-black/40"}`}
           >
             <div className="font-semibold">{cat.name}</div>
             <div className="mt-1 text-xs text-muted-foreground">
@@ -117,7 +170,7 @@ export function BookPage() {
                   setSubCategoryId(sub._id);
                   setForm((f) => ({ ...f, title: `${selected?.name}: ${sub.name}` }));
                 }}
-                className={`rounded-md border px-3 py-2 text-left text-sm ${subCategoryId === sub._id ? "border-primary bg-teal-50" : "border-border hover:bg-muted"}`}
+                className={`rounded-md border px-3 py-2 text-left text-sm ${subCategoryId === sub._id ? "border-black bg-muted" : "border-border hover:bg-muted"}`}
               >
                 <div className="font-medium">{sub.name}</div>
                 <div className="text-[11px] text-muted-foreground">
@@ -140,9 +193,13 @@ export function BookPage() {
             }}
           >
             {priceHint && (
-              <div className="rounded-md bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800">
+              <div className="rounded-md bg-muted px-3 py-2 text-xs font-medium">
                 {priceHint}
-                {contract && <Badge tone="teal">SLA {contract.slaTerms?.responseMinutes}m / {contract.slaTerms?.resolutionMinutes}m</Badge>}
+                {contract && (
+                  <Badge tone="teal">
+                    SLA {contract.slaTerms?.responseMinutes}m / {contract.slaTerms?.resolutionMinutes}m
+                  </Badge>
+                )}
               </div>
             )}
             <Field label="Site">
@@ -181,7 +238,7 @@ export function BookPage() {
             <Field label="Description">
               <Textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </Field>
-            <Button disabled={book.isPending || !form.siteId}>{book.isPending ? "Booking…" : "Submit booking"}</Button>
+            <Button disabled={book.isPending || !form.siteId}>{book.isPending ? "Booking…" : "Call technician"}</Button>
           </form>
         )}
       </Card>

@@ -10,7 +10,7 @@ export function Button({
   variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
 }) {
   const styles = {
-    primary: "bg-primary text-white hover:bg-teal-800",
+    primary: "bg-black text-white hover:bg-neutral-800",
     secondary: "bg-slate-900 text-white hover:bg-slate-800",
     ghost: "bg-transparent text-slate-600 hover:bg-muted",
     danger: "bg-danger text-white hover:bg-red-700",

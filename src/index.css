@@ -21,15 +21,15 @@
 }
 
 :root {
-  --background: #f3f6fb;
-  --foreground: #0f172a;
+  --background: #ffffff;
+  --foreground: #0f0f0f;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #0f766e;
+  --card-foreground: #0f0f0f;
+  --primary: #0f0f0f;
   --primary-foreground: #ffffff;
-  --muted: #eef2f7;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
+  --muted: #f5f5f5;
+  --muted-foreground: #6b6b6b;
+  --border: #e8e8e8;
   --sidebar: #0b1220;
   --sidebar-foreground: #cbd5e1;
   --sidebar-active: #14b8a6;
@@ -85,4 +85,12 @@ table.data td {
 
 table.data tbody tr:hover {
   background: #f8fafc;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

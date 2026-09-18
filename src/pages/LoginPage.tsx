@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2, Radio } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../store/auth";
 import { Button, Field, Input } from "../components/ui/primitives";
+import { safeNext } from "../hooks/useRequireAuth";
 
 export function LoginPage() {
   const login = useAuth((s) => s.login);
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  const next = safeNext(params.get("next"));
+  const booking = next.startsWith("/book");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -19,7 +23,7 @@ export function LoginPage() {
     try {
       await login(email, password);
       toast.success("Signed in");
-      nav("/");
+      nav(next);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -28,18 +32,13 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_#ccfbf1,_#f3f6fb_45%)] px-4">
+    <div className="flex justify-center px-4 py-16">
       <div className="w-full max-w-[420px]">
-        <div className="mb-8 flex flex-col items-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white">
-            <Radio className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-bold">FieldLink</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Client service portal</p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-8 shadow-sm">
-          <h2 className="text-lg font-bold">Sign in</h2>
-          <p className="mb-6 text-xs text-muted-foreground">Book support, track tickets, and manage your sites from live data.</p>
+        <h1 className="text-2xl font-bold">{booking ? "Sign in to call a technician" : "Sign in"}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {booking ? "You can browse the catalog without an account. Booking a visit needs a login." : "Book support, track tickets, and manage your sites."}
+        </p>
+        <div className="mt-6 rounded-2xl border border-border bg-card p-8">
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <Field label="Work email">
               <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -58,8 +57,14 @@ export function LoginPage() {
             </Button>
             <p className="text-center text-xs text-muted-foreground">
               New organization?{" "}
-              <Link className="font-semibold text-primary" to="/register">
+              <Link className="font-semibold text-foreground" to={`/register?next=${encodeURIComponent(next)}`}>
                 Create an account
+              </Link>
+            </p>
+            <p className="text-center text-xs text-muted-foreground">
+              Or{" "}
+              <Link className="font-semibold text-foreground" to="/">
+                keep browsing
               </Link>
             </p>
           </form>

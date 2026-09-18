@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2, Radio } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../store/auth";
 import { Button, Field, Input } from "../components/ui/primitives";
+import { safeNext } from "../hooks/useRequireAuth";
 
 export function RegisterPage() {
   const register = useAuth((s) => s.register);
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  const next = safeNext(params.get("next"));
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "" });
@@ -18,7 +21,7 @@ export function RegisterPage() {
     try {
       await register(form);
       toast.success("Account created");
-      nav("/profile");
+      nav(next === "/" ? "/profile" : next);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -27,18 +30,11 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_#ccfbf1,_#f3f6fb_45%)] px-4 py-10">
+    <div className="flex justify-center px-4 py-16">
       <div className="w-full max-w-[420px]">
-        <div className="mb-8 flex flex-col items-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white">
-            <Radio className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-bold">FieldLink</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Create an account to book services</p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-8 shadow-sm">
-          <h2 className="text-lg font-bold">Register</h2>
-          <p className="mb-6 text-xs text-muted-foreground">You can add company and site details on your profile after signing up.</p>
+        <h1 className="text-2xl font-bold">Create an account</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Browse without signing in. Register when you want to call a technician.</p>
+        <div className="mt-6 rounded-2xl border border-border bg-card p-8">
           <form onSubmit={onSubmit} className="grid gap-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="First name">
@@ -71,7 +67,7 @@ export function RegisterPage() {
             </Button>
             <p className="text-center text-xs text-muted-foreground">
               Already have access?{" "}
-              <Link className="font-semibold text-primary" to="/login">
+              <Link className="font-semibold text-foreground" to={`/login?next=${encodeURIComponent(next)}`}>
                 Sign in
               </Link>
             </p>

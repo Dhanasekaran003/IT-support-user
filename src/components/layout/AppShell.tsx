@@ -1,21 +1,17 @@
-import { Outlet } from "react-router-dom";
-import { Sidebar } from "./Sidebar";
+import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "./Header";
+import { StorefrontFooter } from "./StorefrontFooter";
 
 export function AppShell() {
+  const { pathname } = useLocation();
+  const isAuth = pathname === "/login" || pathname === "/register";
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex min-h-screen">
-        <div className="sticky top-0 hidden h-screen lg:block">
-          <Sidebar />
-        </div>
-        <div className="min-w-0 flex-1">
-          <Header />
-          <main className="p-4 lg:p-6">
-            <Outlet />
-          </main>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
+      <Header />
+      <main className={isAuth ? "" : "min-h-[calc(100vh-72px)]"}>
+        <Outlet />
+      </main>
+      {!isAuth && <StorefrontFooter />}
     </div>
   );
 }
